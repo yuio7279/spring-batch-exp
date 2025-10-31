@@ -103,6 +103,9 @@ JobRepository는 DB 기반의 **메타데이터** 저장소이다.
  
 ### 예외 처리, 스킵, 재시도
 * Step 단위 정책 설정 가능
+
+
+
 ```java
 .faultTolerant()
 .skip(Exception.class).skipLimit(10)
@@ -111,3 +114,94 @@ JobRepository는 DB 기반의 **메타데이터** 저장소이다.
 * 특정 예외 방생 시, 일부 항목 스킵
 * 재시도 제한 설정
 * Chunk 단위로 트랜잭션 관리 -> 안정성 확보
+
+---
+## 코드 흐름 간단한 예시
+```java
+ItemReader
+@Bean
+public FlatFileItemReader<Person> reader() {
+    return new FlatFileItemReaderBuilder<Person>()
+            .name("personReader")
+            .resource(new ClassPathResource("data.csv"))
+            .delimited()
+            .names("id", "name", "age")
+            .targetType(Person.class)
+            .build();
+}
+```
+* data.csv 파일을 읽고, 한 줄 씩 Person객체로 매핑, 필드는 id, name, age
+
+```java
+ItemProcessor
+@Bean
+public ItemProcessor<Person, Person> processor() {
+    return person -> {
+        // 나이 +1 처리 (예시)
+        person.setAge(person.getAge() + 1);
+        return person;
+    };
+}
+```
+* person 객체의 age 필드를 가져와 나이를 + 1 처리
+
+```java
+ItemWriter
+@Bean
+public JdbcBatchItemWriter<Person> writer(DataSource dataSource) {
+    return new JdbcBatchItemWriterBuilder<Person>()
+            .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
+            .sql("INSERT INTO person (id, name, age) VALUES (:id, :name, :age)")
+            .dataSource(dataSource)
+            .build();
+}
+```
+* 처리된 데이터를 DB에 저장한다.
+* BeanPropertyItemSqlParameterSourceProvider 사용 → 객체 필드 매핑
+
+```java
+Step
+@Bean
+public Step step1(StepBuilderFactory stepBuilderFactory,
+                  ItemReader<Person> reader,
+                  ItemProcessor<Person, Person> processor,
+                  ItemWriter<Person> writer) {
+    return stepBuilderFactory.get("step1")
+            .<Person, Person>chunk(2) // 2건씩 트랜잭션 처리
+            .reader(reader)
+            .processor(processor)
+            .writer(writer)
+            .build();
+}
+```
+* Chunk 단위는 2건씩 처리하도록 설정
+* Reader -> Processor -> Writer 순으로 진행
+
+
+```java
+Job
+@Bean
+public Job importUserJob(JobBuilderFactory jobBuilderFactory,
+                         Step step1) {
+    return jobBuilderFactory.get("importUserJob")
+            .start(step1)
+            .build();
+}
+```
+* Job은 여러 Step의 묶음이다.
+
+```java
+jobLauncher.run(...)
+@Autowired
+private JobLauncher jobLauncher;
+
+@Autowired
+private Job importUserJob;
+
+public void runJob() throws Exception {
+    jobLauncher.run(importUserJob, new JobParametersBuilder()
+            .addLong("time", System.currentTimeMillis())
+            .toJobParameters());
+}
+```
+* JobLauncher를 통해 배치 실행 가능
