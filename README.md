@@ -198,6 +198,7 @@ private JobLauncher jobLauncher;
 @Autowired
 private Job importUserJob;
 
+25-11-01
 public void runJob() throws Exception {
     jobLauncher.run(importUserJob, new JobParametersBuilder()
             .addLong("time", System.currentTimeMillis())
