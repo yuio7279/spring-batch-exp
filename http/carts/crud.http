@@ -1,0 +1,35 @@
+### C1. 자신의 장바구니 조회
+GET {{baseUrl}}/carts
+    Authorization: Bearer {{token}}
+
+> {%
+    client.assert(response.status == 200)
+%}
+
+### C2. 장바구니에 아이템 추가
+POST {{baseUrl}}/carts/items
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "productCode": "{{product_code}}",
+  "productName": "캐싱된 상품명",
+  "productPrice": 10000,
+  "quantity": 5
+}
+
+> {%
+    client.global.set("item_code", response.body.data.code)
+%}
+
+### C3. 장바구니 아이템 갯수 추가
+PATCH {{baseUrl}}/carts/items/{{item_code}}/increase
+Authorization: Bearer {{token}}
+
+### C4. 장바구니 아이템 갯수 감소
+PATCH {{baseUrl}}/carts/items/{{item_code}}/decrease
+Authorization: Bearer {{token}}
+
+### C5. 장바구니 항목 제거
+DELETE {{baseUrl}}/carts/items/{{item_code}}
+Authorization: Bearer {{token}}

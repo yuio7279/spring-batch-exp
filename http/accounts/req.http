@@ -1,0 +1,46 @@
+### C1. 회원가입
+POST {{baseUrl}}/accounts
+Content-Type: application/json
+
+{
+  "username": "user",
+  "password": "user",
+  "email": "user@user.com"
+}
+
+> {%
+
+    client.assert(response.status == 201)
+    client.global.set("account_code", response.body.data.accountCode)
+
+%}
+
+### C2. 권한 없음 테스트
+GET {{baseUrl}}/tests/t1
+
+> {%
+    client.assert(response.status == 401)
+%}
+
+### C3. 로그인
+POST {{baseUrl}}/login
+Content-Type: application/x-www-form-urlencoded
+
+username=user&password=user
+
+> {%
+    // 토큰 세팅
+    client.global.set("token", response.headers.valueOf("token"))
+%}
+
+### C4. 회원 정보 조회
+GET {{baseUrl}}/accounts/{{account_code}}
+Authorization: Bearer {{token}}
+
+> {%
+
+    client.assert(response.status == 200)
+    client.assert(response.body.data.username == "user")
+    client.assert(response.body.data.email == "user@user.com")
+
+%}

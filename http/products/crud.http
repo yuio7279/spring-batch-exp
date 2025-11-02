@@ -1,0 +1,79 @@
+### C1. 상품 생성
+POST {{baseUrl}}/products
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "name": "상품_1",
+  "description": "상품_1 설명",
+  "price": 10000
+}
+
+> {%
+
+    client.assert(response.status == 201)
+
+    client.global.set("product_code", response.body.data.code)
+
+%}
+
+### C2. 상품 조회
+GET {{baseUrl}}/products/{{product_code}}
+
+> {%
+
+    client.assert(response.status == 200)
+
+    client.assert(response.body.data.code = client.global.get("product_code"))
+
+%}
+
+### C3. 상품 목록 조회 1
+GET {{baseUrl}}/products
+
+> {%
+
+    client.assert(response.status == 200)
+
+    client.assert(response.body.pageNum == 0)
+    client.assert(response.body.totalPages == 10)
+    client.assert(response.body.pageSize == 10)
+    client.assert(response.body.hasNext == true)
+
+%}
+
+
+### C3. 상품 목록 조회 2
+GET {{baseUrl}}/products?page=1
+
+> {%
+
+    client.assert(response.status == 200)
+
+    client.assert(response.body.pageNum == 1)
+    client.assert(response.body.totalPages == 10)
+    client.assert(response.body.pageSize == 10)
+    client.assert(response.body.hasNext == true)
+
+%}
+
+### C4. 상품 제거 - 실패
+DELETE {{baseUrl}}/products/{{product_code}}
+Authorization: Bearer INVALID_TOKEN
+
+> {%
+    client.assert(response.status == 401)
+%}
+
+
+### C4. 상품 제거 - 성공
+DELETE {{baseUrl}}/products/{{product_code}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.assert(response.status == 200)
+%}
+
+
+
+

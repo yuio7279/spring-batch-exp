@@ -1,0 +1,14 @@
+### C1. 예치금 테스트
+POST {{baseUrl}}/payments/deposit
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "orderCode": "{{order_code}}",
+  "useDeposit": true,
+  "depositAmount": 10000,
+  "amount": 10000,
+  "paymentKey": "_"
+}
+
+

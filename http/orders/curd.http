@@ -1,0 +1,22 @@
+### C1. 주문 생성
+POST {{baseUrl}}/orders
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "cartItemCodes": [
+    "{{item_code}}"
+  ]
+}
+
+> {%
+    client.global.set("order_code", response.body.data.orderCode)
+%}
+
+### C2. 주문 조회
+GET {{baseUrl}}/orders/{{order_code}}
+Authorization: Bearer {{token}}
+
+
+
+
